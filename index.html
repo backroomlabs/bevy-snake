@@ -6,10 +6,12 @@
   <title>Bevy Snake</title>
 
   <!-- trunk replaces this tag with the compiled WASM + JS loader -->
-  <!-- wasm-opt disabled: trunk's bundled wasm-opt doesn't accept the bulk-memory
-       and non-trapping-float-to-int features that rustc emits by default.
-       The --release build from rustc already applies opt-level=3. -->
-  <link data-trunk rel="rust" data-bin="bevy-snake" />
+  <!-- data-wasm-opt="0" disables wasm-opt entirely. Without it, trunk still runs
+       wasm-opt at its default level (-O) in release mode, and its bundled binary
+       (binaryen v123) rejects the bulk-memory and non-trapping-float-to-int
+       features that rustc emits by default. rustc --release already applies
+       opt-level=3, so skipping wasm-opt only costs a little extra size. -->
+  <link data-trunk rel="rust" data-bin="bevy-snake" data-wasm-opt="0" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
