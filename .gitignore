@@ -1,0 +1,15 @@
+# Rust build output
+/target/
+
+# Trunk web build output
+/dist/
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

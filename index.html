@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Bevy Snake</title>
+
+  <!-- trunk replaces this tag with the compiled WASM + JS loader -->
+  <link data-trunk rel="rust" data-bin="bevy-snake" data-wasm-opt="z" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      touch-action: none; /* prevent browser scroll-on-swipe */
+    }
+
+    canvas {
+      display: block;
+      max-width: 100vmin;
+      max-height: 100vmin;
+    }
+  </style>
+</head>
+<body>
+  <!-- Bevy creates and injects its own canvas into the body -->
+</body>
+</html>

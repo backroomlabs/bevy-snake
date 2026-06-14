@@ -1,0 +1,58 @@
+[package]
+name = "bevy-snake"
+version = "0.1.0"
+edition = "2024"
+
+# Library target — cdylib is required for the Android shared object (.so).
+# rlib lets the binary target (main.rs) link against it for desktop & WASM.
+[lib]
+name = "bevy_snake"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+# Binary target — used for desktop and WASM (trunk) builds.
+[[bin]]
+name = "bevy-snake"
+path = "src/main.rs"
+
+# ── Dependencies ──────────────────────────────────────────────────────────────
+
+[dependencies]
+bevy = { version = "0.18.1", features = ["webgl2"] }
+rand = "0.8"
+
+# android_game_activity feature is only added when cross-compiling to Android.
+# Cargo merges this with the base bevy dep for that target.
+[target.'cfg(target_os = "android")'.dependencies]
+bevy = { version = "0.18.1", features = ["android-game-activity"] }
+
+# rand uses getrandom internally; on WASM it needs the "js" backend.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+# ── Android metadata (read by cargo-apk) ─────────────────────────────────────
+
+[package.metadata.android]
+package = "com.example.bevy_snake"
+label = "Bevy Snake"
+# Targets to build; add armv7 for older 32-bit devices.
+build_targets = ["aarch64-linux-android", "armv7-linux-androideabi"]
+
+[package.metadata.android.sdk]
+min_sdk_version = 23
+target_sdk_version = 33
+compile_sdk_version = 33
+
+# ── Build profiles ────────────────────────────────────────────────────────────
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

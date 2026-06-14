@@ -1,0 +1,131 @@
+name: Android — Build APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── Java (required by Android build tools) ──────────────────────────────
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      # ── Android SDK ─────────────────────────────────────────────────────────
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK & build-tools
+        run: |
+          sdkmanager --install \
+            "ndk;27.0.12077973" \
+            "build-tools;34.0.0" \
+            "platforms;android-34"
+
+      # ── Rust toolchain ──────────────────────────────────────────────────────
+      - name: Install Rust (stable + Android targets)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # aarch64 = modern 64-bit devices; armv7 = older 32-bit devices
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-android-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-android-
+
+      # ── cargo-apk ───────────────────────────────────────────────────────────
+      # cargo-apk reads [package.metadata.android] from Cargo.toml,
+      # cross-compiles the cdylib, generates an APK, and optionally signs it.
+      - name: Install cargo-apk
+        run: cargo install cargo-apk --locked
+
+      - name: Build APK (debug)
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_HOME }}
+        run: cargo apk build --lib
+
+      # ── Artifact ────────────────────────────────────────────────────────────
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          # cargo-apk writes APKs to target/release/apk/ (or target/debug/apk/)
+          path: |
+            target/debug/apk/*.apk
+            target/release/apk/*.apk
+          if-no-files-found: warn
+          retention-days: 14
+
+  # ── Release signing (runs on tagged commits only) ───────────────────────────
+  # To use: create a keystore, base64-encode it, and add to repo secrets:
+  #   KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD
+  sign-release:
+    name: Sign & upload release APK
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager --install "ndk;27.0.12077973" "build-tools;34.0.0" "platforms;android-34"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+
+      - name: Install cargo-apk
+        run: cargo install cargo-apk --locked
+
+      - name: Build release APK
+        env:
+          ANDROID_NDK_ROOT: ${{ env.ANDROID_NDK_HOME }}
+        run: cargo apk build --lib --release
+
+      - name: Sign APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > release.keystore
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks release.keystore \
+            --ks-pass "pass:$KEYSTORE_PASSWORD" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --key-pass "pass:$KEY_PASSWORD" \
+            --out bevy-snake-signed.apk \
+            target/release/apk/*.apk
+
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk-signed
+          path: bevy-snake-signed.apk

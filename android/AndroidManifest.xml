@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AndroidManifest.xml for Bevy + GameActivity.
+
+  cargo-apk uses this file (or generates one) when building the APK.
+  Place it at android/AndroidManifest.xml — cargo-apk picks it up automatically
+  when configured with [package.metadata.android] in Cargo.toml.
+
+  GameActivity is part of the Android Game Development Kit (AGDK) and is
+  included transitively through Bevy's android_game_activity feature.
+-->
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.bevy_snake">
+
+    <!-- OpenGL ES 3.0 required by Bevy's renderer -->
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
+    <!-- Internet permission — remove if you don't need networking -->
+    <!-- <uses-permission android:name="android.permission.INTERNET" /> -->
+
+    <application
+        android:label="Bevy Snake"
+        android:hasCode="false"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true">
+
+        <activity
+            android:name="com.google.androidgamesdk.GameActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize|density"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:resizeableActivity="false">
+
+            <!--
+              lib_name must match the Cargo [lib] name (hyphens → underscores).
+              Cargo.toml: [lib] name = "bevy_tutor1"  →  bevy_tutor1
+            -->
+            <meta-data
+                android:name="android.app.lib_name"
+                android:value="bevy_snake" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
