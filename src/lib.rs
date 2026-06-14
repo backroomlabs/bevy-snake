@@ -217,7 +217,7 @@ fn setup_dpad(mut commands: Commands) {
         ))
         .with_children(|col| {
             // Up
-            spawn_dpad_btn(col, Dir::Up, "↑");
+            spawn_dpad_btn(col, Dir::Up, "^");
 
             // Left + Right on the same row
             col.spawn(Node {
@@ -226,12 +226,12 @@ fn setup_dpad(mut commands: Commands) {
                 ..default()
             })
             .with_children(|row| {
-                spawn_dpad_btn(row, Dir::Left, "←");
-                spawn_dpad_btn(row, Dir::Right, "→");
+                spawn_dpad_btn(row, Dir::Left, "<");
+                spawn_dpad_btn(row, Dir::Right, ">");
             });
 
             // Down
-            spawn_dpad_btn(col, Dir::Down, "↓");
+            spawn_dpad_btn(col, Dir::Down, "v");
         });
 }
 
