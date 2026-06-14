@@ -6,7 +6,10 @@
   <title>Bevy Snake</title>
 
   <!-- trunk replaces this tag with the compiled WASM + JS loader -->
-  <link data-trunk rel="rust" data-bin="bevy-snake" data-wasm-opt="z" />
+  <!-- wasm-opt disabled: trunk's bundled wasm-opt doesn't accept the bulk-memory
+       and non-trapping-float-to-int features that rustc emits by default.
+       The --release build from rustc already applies opt-level=3. -->
+  <link data-trunk rel="rust" data-bin="bevy-snake" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
