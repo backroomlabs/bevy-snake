@@ -102,6 +102,14 @@ struct ScoreText;
 #[derive(Component)]
 struct GameOverRoot;
 
+/// Marker on each of the four directional buttons.
+#[derive(Component, Clone, Copy)]
+struct DpadButton(Dir);
+
+/// Marker on the D-pad container so cleanup can find and ignore it.
+#[derive(Component)]
+struct DpadRoot;
+
 // ── Plugin ────────────────────────────────────────────────────────────────────
 
 pub struct SnakePlugin;
@@ -112,7 +120,7 @@ impl Plugin for SnakePlugin {
             .init_resource::<Snake>()
             .init_resource::<Score>()
             .insert_resource(MoveTimer(Timer::from_seconds(MOVE_SECS, TimerMode::Repeating)))
-            .add_systems(Startup, (setup_camera, setup_bg, setup_score_ui))
+            .add_systems(Startup, (setup_camera, setup_bg, setup_score_ui, setup_dpad))
             .add_systems(
                 OnEnter(GameState::Playing),
                 (reset_game, spawn_snake, spawn_first_food).chain(),
@@ -120,7 +128,7 @@ impl Plugin for SnakePlugin {
             // input → tick_move ordering ensures direction is committed before the snake steps
             .add_systems(
                 Update,
-                (input_kb, input_touch, tick_move)
+                (input_kb, input_touch, input_dpad, tick_move)
                     .chain()
                     .run_if(in_state(GameState::Playing)),
             )
@@ -185,6 +193,75 @@ fn setup_score_ui(mut commands: Commands) {
         },
         ScoreText,
     ));
+}
+
+fn setup_dpad(mut commands: Commands) {
+    // Outer container: column of three rows, pinned to bottom-centre of screen.
+    commands
+        .spawn((
+            DpadRoot,
+            Node {
+                position_type: PositionType::Absolute,
+                bottom: Val::Px(28.0),
+                left: Val::Percent(50.0),
+                // Shift left by half the container width to visually centre it.
+                margin: UiRect {
+                    left: Val::Px(-90.0),
+                    ..default()
+                },
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                row_gap: Val::Px(4.0),
+                ..default()
+            },
+        ))
+        .with_children(|col| {
+            // Up
+            spawn_dpad_btn(col, Dir::Up, "↑");
+
+            // Left + Right on the same row
+            col.spawn(Node {
+                flex_direction: FlexDirection::Row,
+                column_gap: Val::Px(64.0),
+                ..default()
+            })
+            .with_children(|row| {
+                spawn_dpad_btn(row, Dir::Left, "←");
+                spawn_dpad_btn(row, Dir::Right, "→");
+            });
+
+            // Down
+            spawn_dpad_btn(col, Dir::Down, "↓");
+        });
+}
+
+fn spawn_dpad_btn(parent: &mut ChildSpawnerCommands, dir: Dir, label: &'static str) {
+    parent
+        .spawn((
+            DpadButton(dir),
+            Button,
+            Node {
+                width: Val::Px(56.0),
+                height: Val::Px(56.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                border: UiRect::all(Val::Px(2.0)),
+                border_radius: BorderRadius::all(Val::Px(10.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.45)),
+            BorderColor::all(Color::srgba(1.0, 1.0, 1.0, 0.4)),
+        ))
+        .with_children(|btn| {
+            btn.spawn((
+                Text::new(label),
+                TextFont {
+                    font_size: 28.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+            ));
+        });
 }
 
 // ── Playing-state entry ───────────────────────────────────────────────────────
@@ -323,6 +400,22 @@ fn input_touch(
                 }
             }
             _ => {}
+        }
+    }
+}
+
+fn input_dpad(
+    interactions: Query<(&Interaction, &DpadButton), Changed<Interaction>>,
+    mut head_q: Query<&mut SnakeHead>,
+) {
+    for (interaction, btn) in &interactions {
+        if *interaction == Interaction::Pressed {
+            if let Ok(mut head) = head_q.single_mut() {
+                let d = btn.0;
+                if d != head.dir.opp() {
+                    head.next = d;
+                }
+            }
         }
     }
 }
