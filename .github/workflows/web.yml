@@ -37,11 +37,16 @@ jobs:
 
       # ── Trunk ───────────────────────────────────────────────────────────────
       # trunk compiles Rust → WASM and produces a self-contained dist/ folder.
+      # Using the action (pre-built binary) instead of cargo install to save CI minutes.
       - name: Install trunk
-        run: cargo install trunk --locked
+        uses: jetli/trunk-action@v0.5.1
+        with:
+          version: latest
 
+      # --public-url ./ makes asset links relative so they resolve under the
+      # GitHub Pages project subpath (e.g. /bevy-snake/) instead of the domain root.
       - name: Build (release)
-        run: trunk build --release
+        run: trunk build --release --public-url ./
 
       # ── Upload artifact (all runs) ──────────────────────────────────────────
       - name: Upload dist artifact
