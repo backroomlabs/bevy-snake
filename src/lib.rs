@@ -2,11 +2,22 @@
 use bevy::{input::touch::*, prelude::*};
 use rand::Rng;
 
-const GRID_W: i32 = 10;
-const GRID_H: i32 = 10;
-const CELL: f32 = 40.0;
-const MOVE_SECS: f32 = 0.18;
+const GRID_W: i32 = 10; // number of columns
+const GRID_H: i32 = 10; // number of rows
+const CELL: f32 = 40.0; // pixel size of one grid cell
+const MOVE_SECS: f32 = 0.18; // seconds between each snake step
 
+/// Converts a grid cell (integer) to a world-space pixel position (float).
+///
+/// Bevy's world origin (0, 0) is the centre of the screen. Without this
+/// conversion, cell (0,0) would sit at the centre and the grid would extend
+/// to the right and up only. The formula shifts everything so the grid is
+/// centred: subtracting half the grid width moves the origin to the left edge,
+/// then adding 0.5 nudges it to the centre of the first cell rather than its
+/// corner.
+///
+/// Z is 0.0 here; callers pass `.with_z(...)` to layer game objects correctly
+/// (background at -2, grid cells at -1, food at 0.9, body at 0.8, head at 1.0).
 fn to_world(p: IVec2) -> Vec3 {
     Vec3::new(
         (p.x as f32 - GRID_W as f32 / 2.0 + 0.5) * CELL,
