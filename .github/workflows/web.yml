@@ -2,9 +2,7 @@ name: Web — Build & Deploy
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [release]
 
 # Allow only one concurrent deployment so in-progress runs are cancelled.
 concurrency:
@@ -58,7 +56,7 @@ jobs:
       # ── Deploy to GitHub Pages (main branch only) ───────────────────────────
       # Requires: repo Settings → Pages → Source = "GitHub Actions"
       - name: Upload Pages artifact
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/release'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist/
@@ -66,7 +64,7 @@ jobs:
   deploy:
     name: Deploy to GitHub Pages
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
 
     permissions:
