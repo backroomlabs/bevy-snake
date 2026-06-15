@@ -1,5 +1,5 @@
 // In Bevy 0.18, touch events use the Message system; TouchInput is a Message not an Event.
-use bevy::{input::touch::*, prelude::*};
+use bevy::{camera::ScalingMode, input::touch::*, prelude::*};
 use rand::Rng;
 
 const GRID_W: i32 = 10; // number of columns
@@ -144,7 +144,21 @@ impl Plugin for SnakePlugin {
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2d);
+    commands.spawn((
+        Camera2d,
+        // AutoMin guarantees the whole grid is visible at any aspect ratio, and the
+        // extra height reserves a band below the grid for the on-screen D-pad.
+        Projection::Orthographic(OrthographicProjection {
+            scaling_mode: ScalingMode::AutoMin {
+                min_width: GRID_W as f32 * CELL + 40.0,
+                min_height: GRID_H as f32 * CELL + 300.0,
+            },
+            ..OrthographicProjection::default_2d()
+        }),
+        // Bias the view downward so the grid sits in the upper area, keeping the
+        // bottom of the screen clear for the controls.
+        Transform::from_xyz(0.0, -120.0, 0.0),
+    ));
 }
 
 fn setup_bg(mut commands: Commands) {
@@ -196,22 +210,20 @@ fn setup_score_ui(mut commands: Commands) {
 }
 
 fn setup_dpad(mut commands: Commands) {
-    // Outer container: column of three rows, pinned to bottom-centre of screen.
+    // Full-width strip pinned to the bottom of the screen; its children are
+    // centred horizontally. Sizes use Vh so the pad scales with the viewport
+    // and stays inside the band the camera reserves below the grid.
     commands
         .spawn((
             DpadRoot,
             Node {
                 position_type: PositionType::Absolute,
-                bottom: Val::Px(28.0),
-                left: Val::Percent(50.0),
-                // Shift left by half the container width to visually centre it.
-                margin: UiRect {
-                    left: Val::Px(-90.0),
-                    ..default()
-                },
+                bottom: Val::Vh(3.0),
+                left: Val::Px(0.0),
+                width: Val::Percent(100.0),
                 flex_direction: FlexDirection::Column,
                 align_items: AlignItems::Center,
-                row_gap: Val::Px(4.0),
+                row_gap: Val::Vh(1.5),
                 ..default()
             },
         ))
@@ -222,7 +234,7 @@ fn setup_dpad(mut commands: Commands) {
             // Left + Right on the same row
             col.spawn(Node {
                 flex_direction: FlexDirection::Row,
-                column_gap: Val::Px(64.0),
+                column_gap: Val::Vh(8.0),
                 ..default()
             })
             .with_children(|row| {
@@ -241,8 +253,8 @@ fn spawn_dpad_btn(parent: &mut ChildSpawnerCommands, dir: Dir, label: &'static s
             DpadButton(dir),
             Button,
             Node {
-                width: Val::Px(56.0),
-                height: Val::Px(56.0),
+                width: Val::Vh(8.0),
+                height: Val::Vh(8.0),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 border: UiRect::all(Val::Px(2.0)),
